@@ -3,6 +3,7 @@ import { getServerSession } from '@/lib/session/get-server-session'
 import { getGitHubStars } from '@/lib/github-stars'
 import { getMaxSandboxDuration } from '@/lib/db/settings'
 import { Metadata } from 'next'
+import { APP_NAME } from '@/lib/brand'
 
 interface TaskPageProps {
   params: Promise<{
@@ -65,7 +66,7 @@ export async function generateMetadata({ params }: TaskPageProps): Promise<Metad
   }
 
   return {
-    title: `${pageTitle} - Coding Agent Platform`,
-    description: 'View task details and execution logs',
+    title: `${pageTitle} - ${APP_NAME}`,
+    description: `View task details and execution logs in ${APP_NAME}`,
   }
 }

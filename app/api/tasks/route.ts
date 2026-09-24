@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { Sandbox } from '@vercel/sandbox'
 import { db } from '@/lib/db/client'
-import { tasks, insertTaskSchema, connectors, taskMessages } from '@/lib/db/schema'
+import { tasks, insertTaskSchema, connectors, taskMessages, projectMemory } from '@/lib/db/schema'
 import { generateId } from '@/lib/utils/id'
 import { createSandbox } from '@/lib/sandbox/creation'
 import { executeAgentInSandbox, AgentType } from '@/lib/sandbox/agents'
@@ -19,6 +19,7 @@ import { decrypt } from '@/lib/crypto'
 import { getServerSession } from '@/lib/session/get-server-session'
 import { getUserGitHubToken } from '@/lib/github/user-token'
 import { getGitHubUser } from '@/lib/github/client'
+import { createPullRequest } from '@/lib/github/client'
 import { getUserApiKeys } from '@/lib/api-keys/user-keys'
 import { checkRateLimit } from '@/lib/utils/rate-limit'
 import { getMaxSandboxDuration } from '@/lib/db/settings'
@@ -80,6 +81,16 @@ export async function POST(request: NextRequest) {
       progress: 0,
       logs: [],
     })
+
+    if (validatedData.repoUrl) {
+      const [memory] = await db
+        .select()
+        .from(projectMemory)
+        .where(and(eq(projectMemory.userId, session.user.id), eq(projectMemory.repoUrl, validatedData.repoUrl)))
+        .limit(1)
+      if (memory?.content)
+        validatedData.prompt = `${validatedData.prompt}\n\nProject memory (follow when relevant):\n${memory.content}`
+    }
 
     // Insert the task into the database - ensure id is definitely present
     const [newTask] = await db
@@ -688,6 +699,25 @@ async function processTask(
         await logger.error('Task failed: Unable to push changes to repository')
         throw new Error('Failed to push changes to repository')
       } else {
+        if (process.env.AUTO_CREATE_PR !== 'false' && repoUrl && branchName) {
+          const prResult = await createPullRequest({
+            repoUrl,
+            branchName,
+            title: commitMessage,
+            body: `## Summary\n\n${prompt}\n\n## Agent\n\n${selectedAgent}`,
+            baseBranch: process.env.GITHUB_BASE_BRANCH || 'main',
+          })
+          if (prResult.success) {
+            await db
+              .update(tasks)
+              .set({ prUrl: prResult.prUrl, prNumber: prResult.prNumber, prStatus: 'open', updatedAt: new Date() })
+              .where(eq(tasks.id, taskId))
+            await logger.success('Pull request created automatically')
+          } else {
+            await logger.info('Automatic pull request creation was skipped')
+          }
+        }
+
         // Update task as completed
         await logger.updateStatus('completed')
         await logger.updateProgress(100, 'Task completed successfully')

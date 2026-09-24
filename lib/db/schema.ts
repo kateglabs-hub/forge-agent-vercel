@@ -356,6 +356,23 @@ export const selectKeySchema = z.object({
 export type Key = z.infer<typeof selectKeySchema>
 export type InsertKey = z.infer<typeof insertKeySchema>
 
+export const projectMemory = pgTable(
+  'project_memory',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    repoUrl: text('repo_url').notNull(),
+    content: text('content').notNull().default(''),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    userRepoUnique: uniqueIndex('project_memory_user_repo_idx').on(table.userId, table.repoUrl),
+  }),
+)
+
 // Task messages table - stores user and agent messages for each task
 export const taskMessages = pgTable('task_messages', {
   id: text('id').primaryKey(),

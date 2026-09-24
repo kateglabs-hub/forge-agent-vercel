@@ -8,6 +8,7 @@ import { SessionProvider } from '@/components/auth/session-provider'
 import { JotaiProvider } from '@/components/providers/jotai-provider'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/brand'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -20,9 +21,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Coding Agent Template',
-  description:
-    'AI-powered coding agent template supporting Claude Code, OpenAI Codex CLI, Cursor CLI, and opencode with Vercel Sandbox',
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
 }
 
 export default function RootLayout({

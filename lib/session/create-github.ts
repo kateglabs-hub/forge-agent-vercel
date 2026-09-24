@@ -31,6 +31,12 @@ export async function createGitHubSession(accessToken: string, scope?: string): 
 
   const githubUser = (await userResponse.json()) as GitHubUser
 
+  const allowedUsername = process.env.ALLOWED_GITHUB_USERNAME?.trim().toLowerCase()
+  if (allowedUsername && githubUser.login.toLowerCase() !== allowedUsername) {
+    console.error('GitHub user is not allowed')
+    return undefined
+  }
+
   // If email is not public, fetch it from the emails endpoint
   let email = githubUser.email
   if (!email) {

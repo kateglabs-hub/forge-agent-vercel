@@ -7,6 +7,7 @@ import { SharedHeader } from '@/components/shared-header'
 import { TaskActions } from '@/components/task-actions'
 import { LogsPane } from '@/components/logs-pane'
 import type { Session } from '@/lib/session/types'
+import { ProjectMemoryPanel } from '@/components/project-memory-panel'
 
 interface TaskPageClientProps {
   taskId: string
@@ -90,6 +91,8 @@ export function TaskPageClient({
           extraActions={<TaskActions task={task} />}
         />
       </div>
+
+      <ProjectMemoryPanel repoUrl={task.repoUrl} />
 
       {/* Task details */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden" style={{ paddingBottom: `${logsPaneHeight}px` }}>
